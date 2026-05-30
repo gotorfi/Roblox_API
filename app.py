@@ -10,13 +10,14 @@ DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1510203543783473214/VeZP
 session_count = 0
 
 def save_session_to_firebase(session):
-    requests.post(FIREBASE_URL + ".json", json=session)
+    requests.post(FIREBASE_URL, json=session)
 
 def load_sessions():
     r = requests.get(FIREBASE_URL)
-    if r.status_code != 200 or not r.json():
+    print("FIREBASE RAW:", r.text)
+    if r.status_code != 200:
         return []
-
+    
     data = r.json()
     if not data:
         return []
@@ -82,7 +83,8 @@ def session():
     # save to firebase
     save_session_to_firebase(data)
 
-    session_count += 1
+    sessions = load_sessions()
+    session_count = len(sessions)
 
     print("SESSION RECEIVED:", session_count)
 
