@@ -47,35 +47,47 @@ def calculate_stats(sessions):
 
 def send_discord(stats):
 
-    desc = f"""
-    📊 **Analytics Summary**
-
-    👥 Sessions: {stats['total']}
-    ⏱ Avg time: {stats['avg_time']} sec
-    💀 Death rate: {stats['died_percent']}%
-
-    📍 Stage completion:
-    """
-
-
-    for stage, pct in sorted(stats["stage_percent"].items(), key=lambda x: x[0]):
-        desc += f"- {stage}: {pct}%\n"
+    stage_text = "\n".join(
+        [f"**{k}**: {v}%" for k, v in sorted(stats["stage_percent"].items())]
+    )
 
     payload = {
-        "content": "",
         "embeds": [
             {
-                "title": "📈 Game Analytics Report (Batch Update)",
-                "description": desc,
-                "color": 3447003
+                "title": "📊 Game Analytics Dashboard",
+                "color": 3447003,
+
+                "fields": [
+                    {
+                        "name": "👥 Total Sessions",
+                        "value": str(stats["total"]),
+                        "inline": True
+                    },
+                    {
+                        "name": "⏱ Avg Session Time",
+                        "value": f"{stats['avg_time']} sec",
+                        "inline": True
+                    },
+                    {
+                        "name": "💀 Death Rate",
+                        "value": f"{stats['died_percent']}%",
+                        "inline": True
+                    },
+                    {
+                        "name": "📍 Stage Completion",
+                        "value": stage_text or "No data",
+                        "inline": False
+                    }
+                ],
+
+                "footer": {
+                    "text": "Updated every 10 sessions"
+                }
             }
         ]
     }
 
-    try:
-        requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
-    except Exception as e:
-        print("Discord send error:", e)
+    requests.post(DISCORD_WEBHOOK_URL, json=payload)
 
 
 @app.route("/session", methods=["POST"])
