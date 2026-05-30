@@ -13,7 +13,7 @@ def save_session_to_firebase(session):
     requests.post(FIREBASE_URL, json=session)
 
 def load_sessions():
-    r = requests.get(FIREBASE_URL)
+    r = requests.get(FIREBASE_URL, timeout=5)
     print("FIREBASE RAW:", r.text)
     if r.status_code != 200:
         return []
@@ -24,31 +24,36 @@ def load_sessions():
     return list(data.values())
 
 def calculate_stats(sessions):
-
-    total = len(sessions)
-    if total == 0:
+    if not sessions:
         return None
 
-    avg_time = sum(s["sessionTime"] for s in sessions) / total
-    died = sum(1 for s in sessions if s.get("leftWhenDied"))
+    try:
+        total = len(sessions)
 
-    stage_counts = {}
+        avg_time = sum(s.get("sessionTime", 0) for s in sessions) / total
+        died = sum(1 for s in sessions if s.get("leftWhenDied"))
 
-    for s in sessions:
-        for stage in s.get("stages", {}):
-            stage_counts[stage] = stage_counts.get(stage, 0) + 1
+        stage_counts = {}
 
-    stage_percent = {
-        k: round((v / total) * 100, 1)
-        for k, v in stage_counts.items()
-    }
+        for s in sessions:
+            for stage in s.get("stages", {}):
+                stage_counts[stage] = stage_counts.get(stage, 0) + 1
 
-    return {
-        "total": total,
-        "avg_time": round(avg_time, 1),
-        "died_percent": round((died / total) * 100, 1),
-        "stage_percent": stage_percent
-    }
+        stage_percent = {
+            k: round((v / total) * 100, 1)
+            for k, v in stage_counts.items()
+        }
+
+        return {
+            "total": total,
+            "avg_time": round(avg_time, 1),
+            "died_percent": round((died / total) * 100, 1),
+            "stage_percent": stage_percent
+        }
+
+    except Exception as e:
+        print("STATS ERROR:", e)
+        return None
 
 def send_discord(stats):
 
@@ -71,7 +76,7 @@ def send_discord(stats):
         ]
     }
 
-    requests.post(DISCORD_WEBHOOK_URL, json=payload)
+    requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=5)
 
 @app.route("/session", methods=["POST"])
 def session():
@@ -94,3 +99,8 @@ def session():
     send_discord(stats)
 
     return jsonify({"success": True})
+
+
+@app.route("/", methods=["GET"])
+def home():
+    return "OK", 200
