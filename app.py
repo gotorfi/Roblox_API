@@ -76,11 +76,8 @@ def send_discord(stats):
 @app.route("/session", methods=["POST"])
 def session():
 
-    global session_count
-
     data = request.json
 
-    # save to firebase
     save_session_to_firebase(data)
 
     sessions = load_sessions()
@@ -88,12 +85,12 @@ def session():
 
     print("SESSION RECEIVED:", session_count)
 
-    # every 10 sessions → analytics
-    if session_count % 10 == 0:
-        sessions = load_sessions()
-        stats = calculate_stats(sessions)
+    stats = calculate_stats(sessions)
 
-        if stats:
-            send_discord(stats)
+    if stats is None:
+        print("NO STATS YET")
+        return jsonify({"success": True})
+
+    send_discord(stats)
 
     return jsonify({"success": True})
