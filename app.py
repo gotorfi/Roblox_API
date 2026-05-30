@@ -5,18 +5,22 @@ import requests
 
 app = Flask(__name__)
 
-DATA_FILE = "analytics.json"
+FIREBASE_URL = "https://ruined-analytics-roblox-default-rtdb.firebaseio.com/sessions.json"
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1510203543783473214/VeZPvBnybCrTk4IYmOW78hSfQ5IF9jOXWvY_W23hJXKnlqfTbU-OH4xi7WURayszkmhw"
+session_count = 0
+
+def save_session_to_firebase(session):
+    requests.post(FIREBASE_URL + ".json", json=session)
 
 def load_sessions():
-    if not os.path.exists(DATA_FILE):
+    r = requests.get(FIREBASE_URL)
+    if r.status_code != 200 or not r.json():
         return []
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
 
-def save_sessions(sessions):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(sessions, f, indent=4)
+    data = r.json()
+    if not data:
+        return []
+    return list(data.values())
 
 def calculate_stats(sessions):
 
@@ -56,65 +60,38 @@ def send_discord(stats):
             {
                 "title": "📊 Game Analytics Dashboard",
                 "color": 3447003,
-
                 "fields": [
-                    {
-                        "name": "👥 Total Sessions",
-                        "value": str(stats["total"]),
-                        "inline": True
-                    },
-                    {
-                        "name": "⏱ Avg Session Time",
-                        "value": f"{stats['avg_time']} sec",
-                        "inline": True
-                    },
-                    {
-                        "name": "💀 Death Rate",
-                        "value": f"{stats['died_percent']}%",
-                        "inline": True
-                    },
-                    {
-                        "name": "📍 Stage Completion",
-                        "value": stage_text or "No data",
-                        "inline": False
-                    }
-                ],
-
-                "footer": {
-                    "text": "Updated every 10 sessions"
-                }
+                    {"name": "👥 Sessions", "value": str(stats["total"]), "inline": True},
+                    {"name": "⏱ Avg Time", "value": f"{stats['avg_time']} sec", "inline": True},
+                    {"name": "💀 Death Rate", "value": f"{stats['died_percent']}%", "inline": True},
+                    {"name": "📍 Stages", "value": stage_text or "No data"}
+                ]
             }
         ]
     }
 
     requests.post(DISCORD_WEBHOOK_URL, json=payload)
 
-
 @app.route("/session", methods=["POST"])
 def session():
 
+    global session_count
+
     data = request.json
 
-    sessions = load_sessions()
-    sessions.append(data)
-    save_sessions(sessions)
+    # save to firebase
+    save_session_to_firebase(data)
 
-    print("Received session")
-    print("SESSION COUNT:", len(sessions))
+    session_count += 1
 
-    if len(sessions) % 10 == 0:
-        print("!!! TRIGGERED ANALYTICS !!!")
+    print("SESSION RECEIVED:", session_count)
+
+    # every 10 sessions → analytics
+    if session_count % 10 == 0:
+        sessions = load_sessions()
         stats = calculate_stats(sessions)
-        send_discord(stats)
+
+        if stats:
+            send_discord(stats)
 
     return jsonify({"success": True})
-
-
-@app.route("/")
-def home():
-    return "Analytics server online"
-
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
