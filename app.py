@@ -5,7 +5,7 @@ import requests
 
 app = Flask(__name__)
 
-FIREBASE_URL = "https://ruined-analytics-roblox-default-rtdb.firebaseio.com/sessions.json"
+FIREBASE_URL = "https://ruined-analytics-roblox-default-rtdb.europe-west1.firebasedatabase.app/sessions.json"
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1510203543783473214/VeZPvBnybCrTk4IYmOW78hSfQ5IF9jOXWvY_W23hJXKnlqfTbU-OH4xi7WURayszkmhw"
 session_count = 0
 
