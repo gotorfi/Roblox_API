@@ -100,8 +100,10 @@ def session():
     save_sessions(sessions)
 
     print("Received session")
+    print("SESSION COUNT:", len(sessions))
 
     if len(sessions) % 10 == 0:
+        print("!!! TRIGGERED ANALYTICS !!!")
         stats = calculate_stats(sessions)
         send_discord(stats)
 
