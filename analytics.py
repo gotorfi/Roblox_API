@@ -57,8 +57,16 @@ stage_counts = {
     for stage in STAGES
 }
 
+all_stages = set()
+
 for session in sessions:
-    print(session.get("stages", {}))
+    all_stages.update(
+        session.get("stages", {}).keys()
+    )
+
+print("ALL STAGES FOUND:")
+print(sorted(all_stages))
+for session in sessions:
     total_time += session.get("sessionTime", 0)
 
     if session.get("leftWhenDied"):
