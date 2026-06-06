@@ -58,7 +58,7 @@ stage_counts = {
 }
 
 for session in sessions:
-
+    print(session.get("stages", {}))
     total_time += session.get("sessionTime", 0)
 
     if session.get("leftWhenDied"):
