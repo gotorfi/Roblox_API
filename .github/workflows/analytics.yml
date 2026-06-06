@@ -10,6 +10,11 @@ jobs:
   analytics:
     runs-on: ubuntu-latest
 
+    env:
+      FIREBASE_URL: ${{ secrets.FIREBASE_URL }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      TOKEN: ${{ secrets.TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
 

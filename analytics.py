@@ -1,7 +1,8 @@
 import requests
+import os
 
-FIREBASE_URL = "https://ruined-analytics-roblox-default-rtdb.europe-west1.firebasedatabase.app/sessions.json"
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1510203543783473214/VeZPvBnybCrTk4IYmOW78hSfQ5IF9jOXWvY_W23hJXKnlqfTbU-OH4xi7WURayszkmhw"
+FIREBASE_URL = os.getenv("FIREBASE_URL")
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 
 STAGES = [
     "Intro",
@@ -88,33 +89,58 @@ avg_time = int(total_time / total)
 minutes = avg_time // 60
 seconds = avg_time % 60
 
-message = "# 📊 STAGE COMPLETION SUMMARY\n\n"
+summary_text = (
+    f"🪬 **Started Story**\n"
+    f"└ {total} players\n\n"
 
-message += f"## 🪬 Total amount of players who started the story: {total}\n"
-message += f"## 💀 Total amount of players who left because of death: {deaths}\n"
-message += f"## ⚠️ Total amount of players who gave up: {gave_up}\n"
-message += f"## ❇️ Average playtime: {minutes} min, {seconds} sec\n"
-message += f"## 💯 Game Completed: {completed}\n\n"
+    f"💀 **Died**\n"
+    f"└ {deaths} players\n\n"
 
-message += "# 📜 STAGES (Amount and Percentage)\n\n"
+    f"⚠️ **Gave Up**\n"
+    f"└ {gave_up} players\n\n"
+
+    f"❇️ **Average Playtime**\n"
+    f"└ {minutes}m {seconds}s\n\n"
+
+    f"🏆 **Completed Story**\n"
+    f"└ {completed} players"
+)
+
+stage_text = ""
 
 for stage in STAGES:
 
     count = stage_counts[stage]
     percent = round(count / total * 100, 1)
 
-    emoji = EMOJIS[stage]
-
-    message += (
-        f"## {emoji} {stage}: "
-        f"{count} | {percent}%\n"
+    stage_text += (
+        f"{EMOJIS[stage]} **{stage}**\n"
+        f"└ {count} players • {percent}%\n\n"
     )
 
-requests.post(
-    
+payload = {
+    "embeds": [
+        {
+            "title": "📊 Ruined Analytics Summary",
+            "description": summary_text,
+            "color": 3447003,
+            "footer": {
+                "text": f"{total} sessions analyzed"
+            }
+        },
+        {
+            "title": "📜 Story Progression",
+            "description": stage_text,
+            "color": 5763719
+        }
+    ]
+}
+
+response = requests.post(
     DISCORD_WEBHOOK_URL,
-    json={"content": message},
+    json=payload,
     timeout=30
 )
-print(len(message))
+
+print("Discord Status:", response.status_code)
 print("Summary sent.")
